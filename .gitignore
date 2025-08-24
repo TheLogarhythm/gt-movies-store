@@ -1,0 +1,39 @@
+# Virtual environment
+my_venv/
+venv/
+env/
+
+# Database
+db.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+.env.local
+
+# Django
+*.log
+local_settings.py
+
+# Static files
+/staticfiles/
+/media/
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
