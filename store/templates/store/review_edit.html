@@ -1,0 +1,25 @@
+<!-- store/templates/store/review_edit.html -->
+{% extends 'store/base.html' %} {% load crispy_forms_tags %} {% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h4>Edit Review for {{ review.movie.title }}</h4>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %} {{ form|crispy }}
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Update Review</button>
+            <a
+              href="{% url 'movie_detail' review.movie.pk %}"
+              class="btn btn-secondary"
+              >Cancel</a
+            >
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

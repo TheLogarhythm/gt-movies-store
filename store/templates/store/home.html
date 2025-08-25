@@ -1,0 +1,47 @@
+<!-- store/templates/store/home.html -->
+{% extends 'store/base.html' %} {% block content %}
+<div class="jumbotron bg-light p-5 rounded">
+  <h1 class="display-4">Welcome to GT Movies Store!</h1>
+  <p class="lead">
+    Your ultimate destination for the latest and greatest movies.
+  </p>
+  <hr class="my-4" />
+  <p>
+    Browse our extensive collection, read reviews from other movie lovers, and
+    build your personal movie library.
+  </p>
+  <a class="btn btn-primary btn-lg" href="{% url 'movie_list' %}" role="button">
+    Explore Movies
+  </a>
+</div>
+
+<div class="row mt-5">
+  <div class="col-md-4 text-center">
+    <div class="card border-0">
+      <div class="card-body">
+        <i class="fas fa-film fa-3x text-primary mb-3"></i>
+        <h3>Extensive Collection</h3>
+        <p>Discover thousands of movies from all genres and eras.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 text-center">
+    <div class="card border-0">
+      <div class="card-body">
+        <i class="fas fa-star fa-3x text-warning mb-3"></i>
+        <h3>Community Reviews</h3>
+        <p>Read honest reviews from our community of movie enthusiasts.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 text-center">
+    <div class="card border-0">
+      <div class="card-body">
+        <i class="fas fa-shopping-cart fa-3x text-success mb-3"></i>
+        <h3>Easy Shopping</h3>
+        <p>Simple and secure checkout process for your convenience.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

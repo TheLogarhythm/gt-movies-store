@@ -1,0 +1,49 @@
+<!-- store/templates/store/order_list.html -->
+{% extends 'store/base.html' %} {% block content %}
+<h2>My Orders</h2>
+
+{% if orders %} {% for order in orders %}
+<div class="card mb-4">
+  <div class="card-header">
+    <div class="d-flex justify-content-between">
+      <h5>Order #{{ order.id }}</h5>
+      <span class="text-muted">{{ order.created_at|date:"M d, Y H:i" }}</span>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Movie</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order.items.all %}
+          <tr>
+            <td>{{ item.movie.title }}</td>
+            <td>${{ item.price }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.subtotal }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="table-primary">
+            <td colspan="3" class="text-end"><strong>Order Total:</strong></td>
+            <td><strong>${{ order.total_amount }}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endfor %} {% else %}
+<div class="alert alert-info">
+  You haven't placed any orders yet.
+  <a href="{% url 'movie_list' %}">Start shopping</a>!
+</div>
+{% endif %} {% endblock %}

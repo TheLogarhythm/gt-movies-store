@@ -1,0 +1,63 @@
+<!-- store/templates/store/cart.html -->
+{% extends 'store/base.html' %} {% block content %}
+<h2>Shopping Cart</h2>
+
+{% if cart_items %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Movie</th>
+        <th>Price</th>
+        <th>Quantity</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in cart_items %}
+      <tr>
+        <td>
+          <img
+            src="{{ item.movie.image.url }}"
+            alt="{{ item.movie.title }}"
+            style="width: 50px; height: 75px; object-fit: cover"
+            class="me-2"
+          />
+          {{ item.movie.title }}
+        </td>
+        <td>${{ item.movie.price }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>${{ item.total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="table-primary">
+        <td colspan="3" class="text-end"><strong>Grand Total:</strong></td>
+        <td><strong>${{ total }}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="d-flex gap-2">
+  <form action="{% url 'remove_from_cart' %}" method="post" class="me-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">
+      <i class="fas fa-trash"></i> Clear Cart
+    </button>
+  </form>
+
+  <form action="{% url 'checkout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">
+      <i class="fas fa-check"></i> Proceed to Checkout
+    </button>
+  </form>
+</div>
+{% else %}
+<div class="alert alert-info">
+  Your cart is empty. <a href="{% url 'movie_list' %}">Browse movies</a> to add
+  some!
+</div>
+{% endif %} {% endblock %}

@@ -1,0 +1,21 @@
+@media (max-width: 768px) {
+  .movie-card {
+    margin-bottom: 1rem;
+  }
+
+  .navbar-nav {
+    text-align: center;
+  }
+
+  .table-responsive {
+    font-size: 0.9rem;
+  }
+}
+
+.card-img-top {
+  transition: transform 0.2s;
+}
+
+.card:hover .card-img-top {
+  transform: scale(1.05);
+}
