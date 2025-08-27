@@ -73,8 +73,22 @@
               <span class="nav-link">Welcome, {{ user.username }}</span>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+              <a
+                class="nav-link"
+                href="#"
+                onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+              >
+                Logout
+              </a>
             </li>
+            <form
+              id="logout-form"
+              method="post"
+              action="{% url 'logout' %}"
+              style="display: none"
+            >
+              {% csrf_token %}
+            </form>
             {% else %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'login' %}">Login</a>
