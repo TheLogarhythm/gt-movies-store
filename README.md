@@ -2,6 +2,10 @@
 
 A full-featured Django e-commerce web application for movie sales.
 
+## 🌐 Live Demo
+
+**🚀 [View Live Application](https://gtmoviesstoreroy.pythonanywhere.com/)**
+
 ## 🎬 Features
 
 - **User Authentication** - Registration, login, logout
@@ -32,7 +36,7 @@ This project implements all 20 required user stories:
 
 1. **Clone the repository**
    ```batch
-   git clone https://github.com/YOUR_USERNAME/gt-movies-store.git
+   git clone https://github.com/TheLogarhythm/gt-movies-store.git
    cd gt-movies-store
    ```
 
@@ -62,11 +66,11 @@ This project implements all 20 required user stories:
    ```
 
 ## 🎥 Video Demonstration
-[Link to demo video showing all features]
+<a href="https://www.youtube.com/watch?v=3jcCVqOJaYg">Watch on YouTube</a>
 
 ## 📧 Contact
 GitHub: @TheLogarhythm
-Portfolio: your-portfolio-site.com
+Portfolio: https://thelogarhythm.github.io/gt-projects/cs2340-ms/
 
 ## 📄 License
 This project was developed as part of CS2340 coursework at Georgia Tech.
