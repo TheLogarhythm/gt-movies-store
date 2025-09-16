@@ -3,7 +3,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Movie, Review, Order, OrderItem
+from django.http import JsonResponse
+from .models import Movie, Review, Order, OrderItem, HiddenMovie
 from .forms import UserRegistrationForm, ReviewForm
 
 def home(request):
@@ -22,8 +23,12 @@ def register(request):
     return render(request, 'store/register.html', {'form': form})
 
 def movie_list(request):
-    """Movie list view with search functionality - User Stories #4, #5"""
-    movies = Movie.objects.all()
+    """Movie list view with search functionality and hidden movies filter - User Stories #4, #5, #22"""
+    # Get visible movies (not hidden by current user)
+    if request.user.is_authenticated:
+        movies = Movie.get_visible_movies(request.user)
+    else:
+        movies = Movie.objects.all()
 
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -214,3 +219,88 @@ def order_list(request):
     """View order history - User Story #14"""
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'store/order_list.html', {'orders': orders})
+
+# New views for hidden movies functionality - User Story #22
+@login_required
+def hide_movie(request, movie_id):
+    """Hide a movie for the current user - User Story #22"""
+    movie = get_object_or_404(Movie, id=movie_id)
+    
+    # Create hidden record if it doesn't exist
+    hidden_movie, created = HiddenMovie.objects.get_or_create(
+        user=request.user,
+        movie=movie
+    )
+    
+    if created:
+        messages.success(request, f'"{movie.title}" has been hidden from your movie list.')
+    else:
+        messages.info(request, f'"{movie.title}" is already hidden.')
+    
+    # Redirect to previous page or movie list
+    return redirect(request.META.get('HTTP_REFERER', 'movie_list'))
+
+@login_required
+def unhide_movie(request, movie_id):
+    """Unhide a movie for the current user - User Story #22"""
+    movie = get_object_or_404(Movie, id=movie_id)
+    
+    try:
+        hidden_movie = HiddenMovie.objects.get(user=request.user, movie=movie)
+        hidden_movie.delete()
+        messages.success(request, f'"{movie.title}" has been restored to your movie list.')
+    except HiddenMovie.DoesNotExist:
+        messages.error(request, f'"{movie.title}" was not hidden.')
+    
+    # Redirect to hidden movies page
+    return redirect('hidden_movies')
+
+@login_required
+def hidden_movies(request):
+    """View hidden movies that can be unhidden - User Story #22"""
+    # Get current user's hidden movies
+    hidden_movies = Movie.get_hidden_movies(request.user)
+    
+    # Search functionality also applies to hidden movies
+    search_query = request.GET.get('search', '')
+    if search_query:
+        hidden_movies = hidden_movies.filter(title__icontains=search_query)
+    
+    # Get hidden time information
+    hidden_records = HiddenMovie.objects.filter(
+        user=request.user,
+        movie__in=hidden_movies
+    ).select_related('movie')
+    
+    return render(request, 'store/hidden_movies.html', {
+        'hidden_movies': hidden_movies,
+        'hidden_records': hidden_records,
+        'search_query': search_query
+    })
+
+@login_required
+def toggle_movie_visibility(request, movie_id):
+    """Toggle movie visibility (hide/unhide) - User Story #22"""
+    movie = get_object_or_404(Movie, id=movie_id)
+    
+    try:
+        # If already hidden, unhide it
+        hidden_movie = HiddenMovie.objects.get(user=request.user, movie=movie)
+        hidden_movie.delete()
+        messages.success(request, f'"{movie.title}" is now visible in your movie list.')
+        action = 'unhidden'
+    except HiddenMovie.DoesNotExist:
+        # If not hidden, hide it
+        HiddenMovie.objects.create(user=request.user, movie=movie)
+        messages.success(request, f'"{movie.title}" has been hidden from your movie list.')
+        action = 'hidden'
+    
+    # If AJAX request, return JSON response
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'action': action,
+            'message': f'Movie {action} successfully'
+        })
+    
+    return redirect(request.META.get('HTTP_REFERER', 'movie_list'))

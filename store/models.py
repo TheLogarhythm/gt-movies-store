@@ -18,6 +18,36 @@ class Movie(models.Model):
 
     def __str__(self):
         return self.title
+    
+    def is_hidden_by_user(self, user):
+        """Check if this movie is hidden by the given user"""
+        if not user.is_authenticated:
+            return False
+        return HiddenMovie.objects.filter(user=user, movie=self).exists()
+    
+    @classmethod
+    def get_visible_movies(cls, user):
+        """Get movies that are not hidden by the user"""
+        if not user.is_authenticated:
+            return cls.objects.all()
+        
+        hidden_movie_ids = HiddenMovie.objects.filter(
+            user=user
+        ).values_list('movie_id', flat=True)
+        
+        return cls.objects.exclude(id__in=hidden_movie_ids)
+    
+    @classmethod
+    def get_hidden_movies(cls, user):
+        """Get movies that are hidden by the user"""
+        if not user.is_authenticated:
+            return cls.objects.none()
+        
+        hidden_movie_ids = HiddenMovie.objects.filter(
+            user=user
+        ).values_list('movie_id', flat=True)
+        
+        return cls.objects.filter(id__in=hidden_movie_ids)
 
 class Review(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -54,3 +84,17 @@ class OrderItem(models.Model):
 
     def subtotal(self):
         return self.quantity * self.price
+
+class HiddenMovie(models.Model):
+    """Model to track movies hidden by users - User Story #22"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    movie = models.ForeignKey('Movie', on_delete=models.CASCADE)
+    hidden_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['user', 'movie']
+        verbose_name = 'Hidden Movie'
+        verbose_name_plural = 'Hidden Movies'
+    
+    def __str__(self):
+        return f"{self.user.username} hid {self.movie.title}"

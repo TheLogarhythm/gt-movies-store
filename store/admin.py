@@ -1,6 +1,6 @@
 # store/admin.py
 from django.contrib import admin
-from .models import Movie, Review, Order, OrderItem
+from .models import Movie, Review, Order, OrderItem, HiddenMovie
 
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
@@ -25,3 +25,14 @@ class OrderAdmin(admin.ModelAdmin):
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ['order', 'movie', 'quantity', 'price']
     list_filter = ['order__created_at']
+
+@admin.register(HiddenMovie)
+class HiddenMovieAdmin(admin.ModelAdmin):
+    list_display = ['user', 'movie', 'hidden_at']
+    list_filter = ['hidden_at']
+    search_fields = ['user__username', 'movie__title']
+    readonly_fields = ['hidden_at']
+    ordering = ['-hidden_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'movie')

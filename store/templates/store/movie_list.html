@@ -22,33 +22,79 @@
   {% for movie in movies %}
   <div class="col-md-4 mb-4">
     <div class="card movie-card h-100">
+      {% if movie.image %}
       <img
         src="{{ movie.image.url }}"
         class="card-img-top"
         alt="{{ movie.title }}"
         style="height: 300px; object-fit: cover"
       />
-      <div class="card-body">
+      {% else %}
+      <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+        <i class="fas fa-film fa-3x text-muted"></i>
+      </div>
+      {% endif %}
+      
+      <div class="card-body d-flex flex-column">
         <h5 class="card-title">{{ movie.title }}</h5>
         <p class="card-text text-muted">${{ movie.price }}</p>
         <p class="card-text">{{ movie.description|truncatewords:20 }}</p>
-      </div>
-      <div class="card-footer">
-        <a
-          href="{% url 'movie_detail' movie.pk %}"
-          class="btn btn-primary w-100"
-        >
-          View Details
-        </a>
+        
+        <div class="mt-auto">
+          <div class="d-grid gap-2">
+            <a
+              href="{% url 'movie_detail' movie.pk %}"
+              class="btn btn-primary"
+            >
+              <i class="fas fa-info-circle"></i> View Details
+            </a>
+            
+            {% if user.is_authenticated %}
+            <a 
+              href="{% url 'hide_movie' movie.id %}" 
+              class="btn btn-outline-secondary btn-sm"
+              onclick="return confirm('Hide this movie from your list?')"
+            >
+              <i class="fas fa-eye-slash"></i> Hide Movie
+            </a>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
   </div>
   {% empty %}
   <div class="col-12">
-    <div class="alert alert-info">
-      No movies found. {% if search_query %} Try a different search term. {% endif %}
+    <div class="alert alert-info text-center">
+      <div class="mb-3">
+        <i class="fas fa-film fa-3x text-muted"></i>
+      </div>
+      <h4>No movies found</h4>
+      {% if search_query %} 
+      <p class="mb-3">No movies match your search for "<strong>{{ search_query }}</strong>"</p>
+      <a href="{% url 'movie_list' %}" class="btn btn-primary">View All Movies</a>
+      {% else %}
+      <p class="mb-3">No movies are currently available.</p>
+      {% endif %}
     </div>
   </div>
   {% endfor %}
 </div>
+
+{% if user.is_authenticated %}
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="alert alert-light text-center">
+      <p class="mb-2">
+        <i class="fas fa-eye-slash text-muted"></i> 
+        Want to see movies you've hidden?
+      </p>
+      <a href="{% url 'hidden_movies' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-eye-slash"></i> View Hidden Movies
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

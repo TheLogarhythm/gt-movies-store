@@ -13,4 +13,10 @@ urlpatterns = [
     path('orders/', views.order_list, name='order_list'),
     path('review/<int:pk>/edit/', views.review_edit, name='review_edit'),
     path('review/<int:pk>/delete/', views.review_delete, name='review_delete'),
+
+    # 新增的隐藏电影功能 URLs
+    path('movies/hide/<int:movie_id>/', views.hide_movie, name='hide_movie'),
+    path('movies/unhide/<int:movie_id>/', views.unhide_movie, name='unhide_movie'),
+    path('movies/toggle-visibility/<int:movie_id>/', views.toggle_movie_visibility, name='toggle_movie_visibility'),
+    path('hidden-movies/', views.hidden_movies, name='hidden_movies'),
 ]
