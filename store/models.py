@@ -28,12 +28,30 @@ class Review(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    likes = models.PositiveIntegerField(default=0)  # 新增：点赞数字段
 
     class Meta:
         unique_together = ['user', 'movie']
 
     def __str__(self):
         return f"Review for {self.movie.title} by {self.user.username}"
+
+    @property
+    def is_top_comment(self):
+        """判断是否为热门评论"""
+        return self.likes >= 3 or len(self.content) > 100
+
+# 新增：用户点赞评论的关系模型
+class ReviewLike(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'review']  # 确保用户只能对同一评论点赞一次
+
+    def __str__(self):
+        return f"{self.user.username} likes {self.review.movie.title} review"
 
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

@@ -1,5 +1,8 @@
 <!-- store/templates/store/movie_detail.html -->
-{% extends 'store/base.html' %} {% load crispy_forms_tags %} {% block content %}
+{% extends 'store/base.html' %} 
+{% load crispy_forms_tags %} 
+
+{% block content %}
 <div class="row">
   <div class="col-md-6">
     <img
@@ -47,42 +50,104 @@
 <div class="row mt-4">
   <div class="col-md-8">
     <h3>Reviews</h3>
-    {% if reviews %} {% for review in reviews %}
+    {% if reviews %} 
+    {% for review in reviews %}
     <div class="card mb-3">
       <div class="card-body">
         <div class="d-flex justify-content-between">
           <h5>{{ review.user.username }}</h5>
           <div class="text-warning">
-            {% for i in "12345" %} {% if forloop.counter <= review.rating %}
+            {% for i in "12345" %} 
+            {% if forloop.counter <= review.rating %}
             <i class="fas fa-star"></i>
             {% else %}
             <i class="far fa-star"></i>
-            {% endif %} {% endfor %}
+            {% endif %} 
+            {% endfor %}
           </div>
         </div>
         <p class="text-muted">{{ review.created_at|date:"M d, Y" }}</p>
         <p>{{ review.content }}</p>
 
-        {% if review.user == user %}
-        <div class="btn-group">
-          <a
-            href="{% url 'review_edit' review.pk %}"
-            class="btn btn-sm btn-outline-primary"
-          >
-            Edit
-          </a>
-          <a
-            href="{% url 'review_delete' review.pk %}"
-            class="btn btn-sm btn-outline-danger"
-          >
-            Delete
-          </a>
+        <!-- 新增：评论操作按钮区域 -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div>
+            {% if review.user == user %}
+            <div class="btn-group">
+              <a
+                href="{% url 'review_edit' review.pk %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </a>
+              <a
+                href="{% url 'review_delete' review.pk %}"
+                class="btn btn-sm btn-outline-danger"
+              >
+                <i class="fas fa-trash"></i> Delete
+              </a>
+            </div>
+            {% endif %}
+          </div>
+          
+          <!-- 新增：点赞按钮 -->
+          <div class="d-flex align-items-center">
+            {% if user.is_authenticated %}
+              {% if review.id in user_likes %}
+              <!-- 用户已点赞 -->
+              <a href="{% url 'like_review' review.id %}" class="btn btn-sm btn-success me-2">
+                <i class="fas fa-thumbs-up"></i> {{ review.likes }}
+              </a>
+              {% else %}
+              <!-- 用户未点赞 -->
+              <a href="{% url 'like_review' review.id %}" class="btn btn-sm btn-outline-primary me-2">
+                <i class="far fa-thumbs-up"></i> {{ review.likes }}
+              </a>
+              {% endif %}
+            {% else %}
+            <!-- 未登录用户 -->
+            <span class="btn btn-sm btn-outline-secondary disabled me-2">
+              <i class="fas fa-thumbs-up"></i> {{ review.likes }}
+            </span>
+            {% endif %}
+
+            <!-- 新增：热门评论标识 -->
+            {% if review.likes >= 5 %}
+            <span class="badge bg-warning text-dark">
+              <i class="fas fa-fire"></i> Hot
+            </span>
+            {% elif review.content|length > 100 %}
+            <span class="badge bg-info">
+              <i class="fas fa-scroll"></i> Detailed
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- 新增：如果是热门评论，显示特殊样式 -->
+        {% if review.is_top_comment %}
+        <div class="mt-2">
+          <small class="text-success">
+            <i class="fas fa-trophy"></i> This is a top comment!
+          </small>
         </div>
         {% endif %}
       </div>
     </div>
-    {% endfor %} {% else %}
-    <p class="text-muted">No reviews yet.</p>
+    {% endfor %} 
+    
+    <!-- 新增：查看所有热门评论的链接 -->
+    <div class="text-center mt-4">
+      <a href="{% url 'top_comments' %}" class="btn btn-outline-warning">
+        <i class="fas fa-trophy"></i> View All Top Comments
+      </a>
+    </div>
+    
+    {% else %}
+    <div class="text-center">
+      <p class="text-muted mb-3">No reviews yet.</p>
+      <p class="text-muted">Be the first to share your thoughts about this movie!</p>
+    </div>
     {% endif %}
   </div>
 
@@ -90,24 +155,47 @@
     {% if user.is_authenticated and not user_review %}
     <div class="card">
       <div class="card-header">
-        <h5>Write a Review</h5>
+        <h5><i class="fas fa-pen"></i> Write a Review</h5>
       </div>
       <div class="card-body">
         <form method="post">
-          {% csrf_token %} {{ form|crispy }}
+          {% csrf_token %} 
+          {{ form|crispy }}
           <button type="submit" class="btn btn-primary w-100">
-            Submit Review
+            <i class="fas fa-paper-plane"></i> Submit Review
           </button>
         </form>
       </div>
     </div>
     {% elif user_review %}
-    <div class="alert alert-info">You've already reviewed this movie.</div>
+    <div class="alert alert-info">
+      <i class="fas fa-check-circle"></i> You've already reviewed this movie.
+    </div>
     {% else %}
     <div class="alert alert-info">
-      Please <a href="{% url 'login' %}">login</a> to write a review.
+      Please <a href="{% url 'login' %}" class="text-decoration-none">login</a> to write a review.
     </div>
     {% endif %}
+
+    <!-- 新增：快速导航卡片 -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h6><i class="fas fa-compass"></i> Quick Navigation</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="{% url 'movie_list' %}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-film"></i> Browse Movies
+          </a>
+          <a href="{% url 'top_comments' %}" class="btn btn-outline-warning btn-sm">
+            <i class="fas fa-trophy"></i> Top Comments
+          </a>
+          <a href="{% url 'funny_users' %}" class="btn btn-outline-success btn-sm">
+            <i class="fas fa-laugh"></i> Funny Users
+          </a>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

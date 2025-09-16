@@ -1,0 +1,138 @@
+<!-- store/templates/store/top_comments.html -->
+{% extends 'store/base.html' %}
+{% block title %}Top Comments - GT Movies Store{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-8">
+    <h2><i class="fas fa-trophy text-warning"></i> Top Comments</h2>
+    <p class="text-muted">Discover the funniest and most insightful movie reviews from our community!</p>
+  </div>
+  <div class="col-md-4 text-end">
+    <a href="{% url 'funny_users' %}" class="btn btn-outline-primary">
+      <i class="fas fa-users"></i> Funny Users
+    </a>
+  </div>
+</div>
+
+{% if reviews %}
+<div class="alert alert-info">
+  <i class="fas fa-info-circle"></i> 
+  Found <strong>{{ total_comments }}</strong> top comments from our community
+</div>
+
+{% for review in reviews %}
+<div class="card mb-4 shadow-sm">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h5 class="card-title mb-1">
+              <a href="{% url 'movie_detail' review.movie.pk %}" class="text-decoration-none">
+                {{ review.movie.title }}
+              </a>
+            </h5>
+            <div class="d-flex align-items-center mb-2">
+              <img src="https://ui-avatars.com/api/?name={{ review.user.username }}&background=007bff&color=fff&size=32" 
+                   class="rounded-circle me-2" alt="{{ review.user.username }}">
+              <strong>{{ review.user.username }}</strong>
+              <span class="text-muted ms-2">{{ review.created_at|date:"M d, Y" }}</span>
+            </div>
+          </div>
+          <div class="text-end">
+            <div class="text-warning mb-1">
+              {% for i in "12345" %}
+                {% if forloop.counter <= review.rating %}
+                  <i class="fas fa-star"></i>
+                {% else %}
+                  <i class="far fa-star"></i>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <small class="text-muted">{{ review.rating }}/5</small>
+          </div>
+        </div>
+        
+        <p class="card-text">{{ review.content }}</p>
+        
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="btn-group">
+            {% if user.is_authenticated %}
+            <a href="{% url 'like_review' review.id %}" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-thumbs-up"></i> {{ review.likes }}
+            </a>
+            {% else %}
+            <span class="btn btn-sm btn-outline-secondary disabled">
+              <i class="fas fa-thumbs-up"></i> {{ review.likes }}
+            </span>
+            {% endif %}
+            
+            <a href="{% url 'movie_detail' review.movie.pk %}" class="btn btn-sm btn-outline-info">
+              <i class="fas fa-eye"></i> View Movie
+            </a>
+          </div>
+          
+          <div class="text-muted small">
+            {% if review.content|length > 100 %}
+              <span class="badge bg-success">Long Review</span>
+            {% endif %}
+            {% if review.likes >= 5 %}
+              <span class="badge bg-warning">Popular</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        {% if review.movie.image %}
+        <img src="{{ review.movie.image.url }}" 
+             class="img-fluid rounded" 
+             alt="{{ review.movie.title }}"
+             style="max-height: 150px; object-fit: cover;">
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- 分页导航 -->
+{% if reviews.has_other_pages %}
+<nav aria-label="Top comments pagination">
+  <ul class="pagination justify-content-center">
+    {% if reviews.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page=1">&laquo; First</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ reviews.previous_page_number }}">Previous</a>
+      </li>
+    {% endif %}
+    
+    <li class="page-item active">
+      <span class="page-link">
+        Page {{ reviews.number }} of {{ reviews.paginator.num_pages }}
+      </span>
+    </li>
+    
+    {% if reviews.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ reviews.next_page_number }}">Next</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ reviews.paginator.num_pages }}">Last &raquo;</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info text-center">
+  <h4>No Top Comments Yet</h4>
+  <p>Be the first to write a detailed review and get featured here!</p>
+  <a href="{% url 'movie_list' %}" class="btn btn-primary">Browse Movies</a>
+</div>
+{% endif %}
+{% endblock %}

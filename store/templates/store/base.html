@@ -62,6 +62,15 @@
           <ul class="navbar-nav">
             {% if user.is_authenticated %}
             <li class="nav-item">
+              <a class="nav-link" href="{% url 'movie_list' %}">Movies</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'top_comments' %}">Top Comments</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'funny_users' %}">Funny Users</a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link" href="{% url 'cart' %}">
                 <i class="fas fa-shopping-cart"></i> Cart
               </a>

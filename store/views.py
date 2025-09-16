@@ -3,7 +3,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Movie, Review, Order, OrderItem
+from django.db.models import Q, Count, Sum
+from django.core.paginator import Paginator
+from django.contrib.auth.models import User
+from .models import Movie, Review, Order, OrderItem, ReviewLike
 from .forms import UserRegistrationForm, ReviewForm
 
 def home(request):
@@ -38,12 +41,17 @@ def movie_list(request):
 def movie_detail(request, pk):
     """Movie detail view with reviews - User Stories #8, #12, #13"""
     movie = get_object_or_404(Movie, pk=pk)
-    reviews = Review.objects.filter(movie=movie).order_by('-created_at')
+    reviews = Review.objects.filter(movie=movie).order_by('-likes', '-created_at')
 
     # Check if user has already reviewed this movie
     user_review = None
+    user_likes = []
     if request.user.is_authenticated:
         user_review = Review.objects.filter(movie=movie, user=request.user).first()
+        user_likes = list(ReviewLike.objects.filter(
+            user=request.user, 
+            review__movie=movie
+        ).values_list('review_id', flat=True))
 
     if request.method == 'POST' and request.user.is_authenticated and not user_review:
         form = ReviewForm(request.POST)
@@ -61,7 +69,8 @@ def movie_detail(request, pk):
         'movie': movie,
         'reviews': reviews,
         'form': form,
-        'user_review': user_review
+        'user_review': user_review,
+        'user_likes': user_likes
     })
 
 @login_required
@@ -214,3 +223,62 @@ def order_list(request):
     """View order history - User Story #14"""
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'store/order_list.html', {'orders': orders})
+
+# === 新增的热门评论功能 ===
+
+def top_comments(request):
+    """显示所有热门评论 - 新用户故事"""
+    # 获取热门评论 (按点赞数和评论长度排序)
+    reviews = Review.objects.annotate(
+        content_length=Count('content')
+    ).filter(
+        Q(likes__gte=3) |  # 点赞数>=3
+        Q(content__regex=r'.{100,}')  # 或评论长度>=100字符
+    ).select_related('user', 'movie').order_by('-likes', '-created_at')
+
+    # 分页处理
+    paginator = Paginator(reviews, 10)  # 每页显示10条评论
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'store/top_comments.html', {
+        'reviews': page_obj,
+        'total_comments': reviews.count()
+    })
+
+def funny_users(request):
+    """显示幽默用户排行榜"""
+    # 按用户的总点赞数排序
+    users = User.objects.annotate(
+        total_likes=Sum('review__likes'),
+        review_count=Count('review')
+    ).filter(
+        total_likes__gt=0
+    ).order_by('-total_likes')[:20]  # 前20名
+
+    return render(request, 'store/funny_users.html', {
+        'users': users
+    })
+
+@login_required
+def like_review(request, review_id):
+    """点赞/取消点赞评论功能"""
+    review = get_object_or_404(Review, id=review_id)
+    
+    # 检查用户是否已经点赞
+    try:
+        like = ReviewLike.objects.get(user=request.user, review=review)
+        # 如果已经点赞，则取消点赞
+        like.delete()
+        review.likes = max(0, review.likes - 1)
+        review.save()
+        messages.info(request, 'You unliked this review.')
+    except ReviewLike.DoesNotExist:
+        # 如果没有点赞，则添加点赞
+        ReviewLike.objects.create(user=request.user, review=review)
+        review.likes += 1
+        review.save()
+        messages.success(request, 'You liked this review!')
+    
+    # 返回到原页面
+    return redirect(request.META.get('HTTP_REFERER', 'movie_detail'), pk=review.movie.pk)

@@ -13,4 +13,9 @@ urlpatterns = [
     path('orders/', views.order_list, name='order_list'),
     path('review/<int:pk>/edit/', views.review_edit, name='review_edit'),
     path('review/<int:pk>/delete/', views.review_delete, name='review_delete'),
+
+    # 新增的URL路由
+    path('top-comments/', views.top_comments, name='top_comments'),
+    path('funny-users/', views.funny_users, name='funny_users'),
+    path('like-review/<int:review_id>/', views.like_review, name='like_review'),
 ]
