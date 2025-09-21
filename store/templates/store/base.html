@@ -34,6 +34,19 @@
       footer {
         margin-top: auto;
       }
+      .petition-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .petition-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      .vote-btn {
+        transition: all 0.2s;
+      }
+      .progress-bar {
+        transition: width 0.3s ease;
+      }
     </style>
   </head>
   <body>
@@ -57,6 +70,11 @@
             <li class="nav-item">
               <a class="nav-link" href="{% url 'movie_list' %}">Movies</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'petition_list' %}">
+                <i class="fas fa-vote-yea"></i> Movie Petitions
+              </a>
+            </li>
           </ul>
 
           <ul class="navbar-nav">
@@ -68,6 +86,11 @@
             </li>
             <li class="nav-item">
               <a class="nav-link" href="{% url 'order_list' %}">My Orders</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'my_petitions' %}">
+                <i class="fas fa-clipboard-list"></i> My Petitions
+              </a>
             </li>
             <li class="nav-item">
               <span class="nav-link">Welcome, {{ user.username }}</span>

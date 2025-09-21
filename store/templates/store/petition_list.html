@@ -1,0 +1,175 @@
+<!-- store/templates/store/petition_list.html -->
+{% extends 'store/base.html' %}
+{% block title %}Movie Petitions - GT Movies Store{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-8">
+    <h2><i class="fas fa-vote-yea text-primary"></i> Movie Petitions</h2>
+    <p class="text-muted">Vote on which movies should be added to our catalog!</p>
+  </div>
+  <div class="col-md-4 text-end">
+    {% if user.is_authenticated %}
+    <a href="{% url 'create_petition' %}" class="btn btn-success">
+      <i class="fas fa-plus"></i> Create Petition
+    </a>
+    {% else %}
+    <a href="{% url 'login' %}" class="btn btn-outline-primary">
+      Login to Create Petition
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Search bar -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <form method="get" class="d-flex">
+      <input 
+        type="text" 
+        name="search" 
+        class="form-control me-2" 
+        placeholder="Search petitions by title, description, or genre..." 
+        value="{{ search_query }}"
+      >
+      <button type="submit" class="btn btn-outline-secondary">
+        <i class="fas fa-search"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if page_obj %}
+<div class="row">
+  {% for petition in page_obj %}
+  <div class="col-lg-6 mb-4">
+    <div class="card petition-card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+          <i class="fas fa-user-circle text-muted"></i> 
+          {{ petition.creator.username }}
+        </h6>
+        <small class="text-muted">
+          <i class="fas fa-clock"></i> {{ petition.created_at|date:"M d, Y" }}
+        </small>
+      </div>
+      
+      <div class="card-body">
+        <h5 class="card-title">{{ petition.movie_title }}</h5>
+        
+        {% if petition.director %}
+        <p class="text-muted mb-2">
+          <i class="fas fa-film"></i> Directed by {{ petition.director }}
+          {% if petition.release_year %} ({{ petition.release_year }}) {% endif %}
+        </p>
+        {% endif %}
+        
+        {% if petition.genre %}
+        <span class="badge bg-secondary mb-2">{{ petition.genre }}</span>
+        {% endif %}
+        
+        <p class="card-text">{{ petition.movie_description|truncatewords:20 }}</p>
+        <p class="card-text text-info">
+          <strong>Why this movie?</strong> {{ petition.reason|truncatewords:15 }}
+        </p>
+        
+        <!-- Voting Statistics -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-2">
+            <span><i class="fas fa-thumbs-up text-success"></i> Yes: {{ petition.yes_votes }}</span>
+            <span><i class="fas fa-thumbs-down text-danger"></i> No: {{ petition.no_votes }}</span>
+            <span><i class="fas fa-users text-info"></i> Total: {{ petition.total_votes }}</span>
+          </div>
+          
+          {% if petition.total_votes > 0 %}
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-success" 
+                 style="width: {{ petition.yes_percentage }}%"
+                 title="{{ petition.yes_percentage }}% Yes votes">
+            </div>
+          </div>
+          <small class="text-muted">{{ petition.yes_percentage }}% support</small>
+          {% else %}
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-light" style="width: 100%"></div>
+          </div>
+          <small class="text-muted">No votes yet</small>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="card-footer">
+        <div class="d-grid">
+          <a href="{% url 'petition_detail' petition.pk %}" class="btn btn-primary">
+            <i class="fas fa-info-circle"></i> View Details & Vote
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Petition pagination">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">
+        <i class="fas fa-angle-double-left"></i>
+      </a>
+    </li>
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+        <i class="fas fa-angle-left"></i>
+      </a>
+    </li>
+    {% endif %}
+    
+    <li class="page-item active">
+      <span class="page-link">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+    </li>
+    
+    {% if page_obj.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+        <i class="fas fa-angle-right"></i>
+      </a>
+    </li>
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">
+        <i class="fas fa-angle-double-right"></i>
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+  <div class="mb-4">
+    <i class="fas fa-vote-yea fa-5x text-muted"></i>
+  </div>
+  <h3>No Petitions Found</h3>
+  {% if search_query %}
+  <p class="text-muted mb-4">No petitions match your search for "<strong>{{ search_query }}</strong>"</p>
+  <a href="{% url 'petition_list' %}" class="btn btn-secondary me-2">View All Petitions</a>
+  {% else %}
+  <p class="text-muted mb-4">Be the first to petition for a movie!</p>
+  {% endif %}
+  {% if user.is_authenticated %}
+  <a href="{% url 'create_petition' %}" class="btn btn-success">
+    <i class="fas fa-plus"></i> Create First Petition
+  </a>
+  {% else %}
+  <a href="{% url 'login' %}" class="btn btn-primary">
+    Login to Create Petition
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
