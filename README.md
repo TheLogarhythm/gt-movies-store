@@ -1,4 +1,4 @@
-# GT Movies Store
+# GT Movies Store - 2025
 
 A full-featured Django e-commerce web application for movie sales.
 
