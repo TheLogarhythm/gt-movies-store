@@ -1,0 +1,120 @@
+<!-- store/templates/store/my_petitions.html -->
+{% extends 'store/base.html' %}
+{% block title %}My Petitions - GT Movies Store{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-8">
+    <h2><i class="fas fa-clipboard-list text-primary"></i> My Petitions</h2>
+    <p class="text-muted">Manage your movie petition requests</p>
+  </div>
+  <div class="col-md-4 text-end">
+    <a href="{% url 'create_petition' %}" class="btn btn-success">
+      <i class="fas fa-plus"></i> Create New Petition
+    </a>
+  </div>
+</div>
+
+{% if petitions %}
+<div class="row">
+  {% for petition in petitions %}
+  <div class="col-lg-6 mb-4">
+    <div class="card petition-card h-100">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">{{ petition.movie_title }}</h6>
+          <span class="badge {% if petition.status == 'active' %}bg-success{% elif petition.status == 'approved' %}bg-primary{% elif petition.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}">
+            {{ petition.get_status_display }}
+          </span>
+        </div>
+        <small class="text-muted">
+          <i class="fas fa-calendar"></i> Created {{ petition.created_at|date:"M d, Y" }}
+        </small>
+      </div>
+      
+      <div class="card-body">
+        {% if petition.director %}
+        <p class="text-muted mb-2">
+          <i class="fas fa-film"></i> {{ petition.director }}
+          {% if petition.release_year %} ({{ petition.release_year }}) {% endif %}
+        </p>
+        {% endif %}
+        
+        {% if petition.genre %}
+        <span class="badge bg-secondary mb-2">{{ petition.genre }}</span>
+        {% endif %}
+        
+        <p class="card-text">{{ petition.movie_description|truncatewords:15 }}</p>
+        <p class="card-text text-info">
+          <small><strong>Reason:</strong> {{ petition.reason|truncatewords:20 }}</small>
+        </p>
+        
+        <!-- Voting Statistics -->
+        <div class="row text-center mb-3">
+          <div class="col-4">
+            <div class="h6 text-success">{{ petition.yes_votes }}</div>
+            <small class="text-muted">Yes</small>
+          </div>
+          <div class="col-4">
+            <div class="h6 text-danger">{{ petition.no_votes }}</div>
+            <small class="text-muted">No</small>
+          </div>
+          <div class="col-4">
+            <div class="h6 text-info">{{ petition.total_votes }}</div>
+            <small class="text-muted">Total</small>
+          </div>
+        </div>
+        
+        {% if petition.total_votes > 0 %}
+        <div class="progress mb-2" style="height: 8px;">
+          <div class="progress-bar bg-success" 
+               style="width: {{ petition.yes_percentage }}%">
+          </div>
+        </div>
+        <small class="text-muted">{{ petition.yes_percentage }}% support</small>
+        {% else %}
+        <small class="text-muted">No votes yet</small>
+        {% endif %}
+      </div>
+      
+      <div class="card-footer">
+        <div class="d-grid">
+          <a href="{% url 'petition_detail' petition.pk %}" class="btn btn-outline-primary">
+            <i class="fas fa-eye"></i> View Details
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5">
+  <div class="mb-4">
+    <i class="fas fa-clipboard-list fa-5x text-muted"></i>
+  </div>
+  <h3>No Petitions Yet</h3>
+  <p class="text-muted mb-4">You haven't created any movie petitions yet.</p>
+  <a href="{% url 'create_petition' %}" class="btn btn-success">
+    <i class="fas fa-plus"></i> Create Your First Petition
+  </a>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card bg-light">
+      <div class="card-body">
+        <h6><i class="fas fa-lightbulb"></i> Tips for Successful Petitions:</h6>
+        <ul class="mb-0">
+          <li>Provide detailed movie descriptions and compelling reasons</li>
+          <li>Share your petition with friends to get more votes</li>
+          <li>Check back regularly to see how your petition is performing</li>
+          <li>Petitions with higher support are more likely to be approved</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

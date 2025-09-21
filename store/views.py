@@ -3,13 +3,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Movie, Review, Order, OrderItem
-from .forms import UserRegistrationForm, ReviewForm
+from django.core.paginator import Paginator
+from django.db.models import Q
+from .models import Movie, Review, Order, OrderItem, MoviePetition, PetitionVote
+from .forms import UserRegistrationForm, ReviewForm, MoviePetitionForm
 
 def home(request):
+    """Home page view - User Story #1"""
     return render(request, 'store/home.html')
 
 def register(request):
+    """User registration view - User Story #2"""
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
@@ -214,3 +218,102 @@ def order_list(request):
     """View order history - User Story #14"""
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'store/order_list.html', {'orders': orders})
+
+# New views for Movie Petition functionality - User Story #21
+def petition_list(request):
+    """View all active movie petitions - User Story #21"""
+    petitions = MoviePetition.objects.filter(status='active').order_by('-created_at')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        petitions = petitions.filter(
+            Q(movie_title__icontains=search_query) |
+            Q(movie_description__icontains=search_query) |
+            Q(genre__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(petitions, 10)  # Show 10 petitions per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'store/petition_list.html', {
+        'page_obj': page_obj,
+        'search_query': search_query
+    })
+
+@login_required
+def create_petition(request):
+    """Create a new movie petition - User Story #21"""
+    if request.method == 'POST':
+        form = MoviePetitionForm(request.POST)
+        if form.is_valid():
+            petition = form.save(commit=False)
+            petition.creator = request.user
+            petition.save()
+            messages.success(request, f'Petition for "{petition.movie_title}" created successfully!')
+            return redirect('petition_detail', pk=petition.pk)
+    else:
+        form = MoviePetitionForm()
+    
+    return render(request, 'store/create_petition.html', {'form': form})
+
+def petition_detail(request, pk):
+    """View petition details - User Story #21"""
+    petition = get_object_or_404(MoviePetition, pk=pk)
+    
+    # Get user's vote if authenticated
+    user_vote = None
+    if request.user.is_authenticated:
+        user_vote = PetitionVote.objects.filter(user=request.user, petition=petition).first()
+    
+    context = {
+        'petition': petition,
+        'user_vote': user_vote,
+    }
+    
+    return render(request, 'store/petition_detail.html', context)
+
+@login_required
+def vote_petition(request, pk):
+    """Vote on a movie petition - User Story #21"""
+    petition = get_object_or_404(MoviePetition, pk=pk)
+    
+    if request.method == 'POST':
+        vote_type = request.POST.get('vote_type')
+        
+        if vote_type not in ['yes', 'no']:
+            messages.error(request, 'Invalid vote type.')
+            return redirect('petition_detail', pk=pk)
+        
+        # Check if user has already voted
+        existing_vote = PetitionVote.objects.filter(user=request.user, petition=petition).first()
+        
+        if existing_vote:
+            # Update existing vote
+            if existing_vote.vote_type != vote_type:
+                existing_vote.vote_type = vote_type
+                existing_vote.save()
+                messages.success(request, f'Your vote has been updated to "{vote_type.upper()}"!')
+            else:
+                messages.info(request, f'You have already voted "{vote_type.upper()}" on this petition.')
+        else:
+            # Create new vote
+            PetitionVote.objects.create(
+                user=request.user,
+                petition=petition,
+                vote_type=vote_type
+            )
+            messages.success(request, f'Your "{vote_type.upper()}" vote has been recorded!')
+    
+    return redirect('petition_detail', pk=pk)
+
+@login_required
+def my_petitions(request):
+    """View petitions created by current user - User Story #21"""
+    petitions = MoviePetition.objects.filter(creator=request.user).order_by('-created_at')
+    
+    return render(request, 'store/my_petitions.html', {
+        'petitions': petitions
+    })

@@ -1,0 +1,177 @@
+<!-- store/templates/store/petition_detail.html -->
+{% extends 'store/base.html' %}
+{% block title %}{{ petition.movie_title }} Petition - GT Movies Store{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8 mx-auto">
+    <div class="card">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">
+            <i class="fas fa-film text-primary"></i> {{ petition.movie_title }}
+          </h4>
+          <span class="badge bg-primary">{{ petition.get_status_display }}</span>
+        </div>
+        <small class="text-muted">
+          Petition by <strong>{{ petition.creator.username }}</strong> 
+          on {{ petition.created_at|date:"F d, Y" }}
+        </small>
+      </div>
+      
+      <div class="card-body">
+        <!-- Movie Information -->
+        <div class="row mb-4">
+          {% if petition.director %}
+          <div class="col-md-6">
+            <strong><i class="fas fa-user-tie"></i> Director:</strong> {{ petition.director }}
+          </div>
+          {% endif %}
+          {% if petition.release_year %}
+          <div class="col-md-6">
+            <strong><i class="fas fa-calendar"></i> Year:</strong> {{ petition.release_year }}
+          </div>
+          {% endif %}
+        </div>
+        
+        {% if petition.genre %}
+        <div class="mb-3">
+          <span class="badge bg-secondary fs-6">
+            <i class="fas fa-tag"></i> {{ petition.genre }}
+          </span>
+        </div>
+        {% endif %}
+        
+        <!-- Movie Description -->
+        <div class="mb-4">
+          <h6><i class="fas fa-info-circle"></i> Movie Description:</h6>
+          <p class="text-muted">{{ petition.movie_description }}</p>
+        </div>
+        
+        <!-- Petition Reason -->
+        <div class="mb-4">
+          <h6><i class="fas fa-question-circle"></i> Why This Movie?</h6>
+          <div class="alert alert-light">
+            <p class="mb-0">{{ petition.reason }}</p>
+          </div>
+        </div>
+        
+        <!-- Voting Statistics -->
+        <div class="card bg-light mb-4">
+          <div class="card-body">
+            <h6><i class="fas fa-chart-bar"></i> Voting Results</h6>
+            
+            <div class="row text-center mb-3">
+              <div class="col-md-4">
+                <div class="h4 text-success">{{ petition.yes_votes }}</div>
+                <small class="text-muted">
+                  <i class="fas fa-thumbs-up"></i> Yes Votes
+                </small>
+              </div>
+              <div class="col-md-4">
+                <div class="h4 text-danger">{{ petition.no_votes }}</div>
+                <small class="text-muted">
+                  <i class="fas fa-thumbs-down"></i> No Votes
+                </small>
+              </div>
+              <div class="col-md-4">
+                <div class="h4 text-info">{{ petition.total_votes }}</div>
+                <small class="text-muted">
+                  <i class="fas fa-users"></i> Total Votes
+                </small>
+              </div>
+            </div>
+            
+            {% if petition.total_votes > 0 %}
+            <div class="progress mb-2" style="height: 20px;">
+              <div class="progress-bar bg-success" 
+                   style="width: {{ petition.yes_percentage }}%"
+                   title="{{ petition.yes_percentage }}% Yes votes">
+                {{ petition.yes_percentage }}%
+              </div>
+            </div>
+            <div class="text-center">
+              <small class="text-muted">{{ petition.yes_percentage }}% of voters support adding this movie</small>
+            </div>
+            {% else %}
+            <div class="text-center text-muted">
+              <i class="fas fa-info-circle"></i> No votes cast yet. Be the first to vote!
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Voting Section -->
+        {% if user.is_authenticated %}
+          {% if petition.status == 'active' %}
+            {% if petition.creator != user %}
+              <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                  <h6 class="mb-0"><i class="fas fa-vote-yea"></i> Cast Your Vote</h6>
+                </div>
+                <div class="card-body">
+                  {% if user_vote %}
+                  <div class="alert alert-info">
+                    <i class="fas fa-check-circle"></i> 
+                    You have already voted <strong>"{{ user_vote.get_vote_type_display }}"</strong> on this petition.
+                    You can change your vote below.
+                  </div>
+                  {% endif %}
+                  
+                  <form method="post" action="{% url 'vote_petition' petition.pk %}">
+                    {% csrf_token %}
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <button type="submit" name="vote_type" value="yes" 
+                                class="btn btn-success w-100 vote-btn {% if user_vote.vote_type == 'yes' %}active{% endif %}">
+                          <i class="fas fa-thumbs-up"></i> 
+                          Yes, Add This Movie!
+                        </button>
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <button type="submit" name="vote_type" value="no" 
+                                class="btn btn-danger w-100 vote-btn {% if user_vote.vote_type == 'no' %}active{% endif %}">
+                          <i class="fas fa-thumbs-down"></i> 
+                          No, Don't Add
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            {% else %}
+            <div class="alert alert-warning">
+              <i class="fas fa-info-circle"></i> 
+              You cannot vote on your own petition.
+            </div>
+            {% endif %}
+          {% else %}
+          <div class="alert alert-secondary">
+            <i class="fas fa-ban"></i> 
+            This petition is no longer active (Status: {{ petition.get_status_display }}).
+          </div>
+          {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+          <i class="fas fa-sign-in-alt"></i> 
+          <a href="{% url 'login' %}" class="alert-link">Log in</a> to vote on this petition.
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="card-footer">
+        <div class="d-flex justify-content-between">
+          <a href="{% url 'petition_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Petitions
+          </a>
+          {% if user.is_authenticated and petition.creator == user %}
+          <span class="text-muted">
+            <i class="fas fa-user-check"></i> You created this petition
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
