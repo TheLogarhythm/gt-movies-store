@@ -13,6 +13,35 @@
     <p class="h4 text-primary">${{ movie.price }}</p>
     <p class="lead">{{ movie.description }}</p>
 
+    <!-- ADD THIS SECTION: Average Rating Display -->
+    <div class="movie-rating mb-3">
+      <h5>Rating</h5>
+      {% with avg_rating=movie.get_average_rating rating_count=movie.get_rating_count %}
+        {% if rating_count > 0 %}
+          <div class="d-flex align-items-center">
+            <div class="stars me-2">
+              {% for i in "12345" %}
+                {% if forloop.counter <= avg_rating %}
+                  <i class="fas fa-star text-warning"></i>
+                {% elif forloop.counter <= avg_rating|add:0.5 %}
+                  <i class="fas fa-star-half-alt text-warning"></i>
+                {% else %}
+                  <i class="far fa-star text-warning"></i>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <span class="rating-text">
+              <strong>{{ avg_rating }}</strong>/5 
+              ({{ rating_count }} rating{{ rating_count|pluralize }})
+            </span>
+          </div>
+        {% else %}
+          <p class="text-muted">No ratings yet</p>
+        {% endif %}
+      {% endwith %}
+    </div>
+    <!-- END OF ADDED SECTION -->
+
     {% if user.is_authenticated %}
     <form action="{% url 'add_to_cart' movie.id %}" method="post" class="mb-3">
       {% csrf_token %}

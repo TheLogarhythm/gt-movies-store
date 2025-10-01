@@ -3,6 +3,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Sum, Count, Q
+import json
 from .models import Movie, Review, Order, OrderItem
 from .forms import UserRegistrationForm, ReviewForm
 
@@ -179,9 +181,14 @@ def checkout(request):
         messages.error(request, 'Your cart is empty.')
         return redirect('cart')
 
-    # Create order
+    # Create order with region data
     total = 0
-    order = Order.objects.create(user=request.user, total_amount=0)
+    order = Order.objects.create(
+        user=request.user, 
+        total_amount=0,
+        region=request.POST.get('region', 'Georgia'),
+        city=request.POST.get('city', 'Atlanta')
+    )
 
     for movie_id, quantity in cart.items():
         try:
@@ -214,3 +221,33 @@ def order_list(request):
     """View order history - User Story #14"""
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'store/order_list.html', {'orders': orders})
+
+def trending_map_view(request):
+    """Display geographic trending map"""
+    # Get trending data by region
+    regional_data = {}
+    
+    # Define some sample regions
+    regions = ['Georgia', 'Florida', 'North Carolina', 'South Carolina', 'Tennessee', 'Alabama']
+    
+    for region in regions:
+        # Get top 3 movies for this region
+        trending_movies = Movie.objects.filter(orderitem__order__region=region).annotate(
+            total_purchases=Sum('orderitem__quantity')
+        ).filter(total_purchases__gt=0).order_by('-total_purchases')[:3]
+        
+        regional_data[region] = {
+            'movies': [
+                {
+                    'title': movie.title,
+                    'purchases': movie.total_purchases or 0,
+                    'id': movie.id
+                } for movie in trending_movies
+            ],
+            'total_orders': Order.objects.filter(region=region).count()
+        }
+    
+    context = {
+        'regional_data': regional_data,
+    }
+    return render(request, 'store/trending_map.html', context)

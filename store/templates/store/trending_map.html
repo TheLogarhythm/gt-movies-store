@@ -1,0 +1,133 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Local Popularity Map - GT Movies Store{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-map-marked-alt me-2"></i>
+            Local Popularity Map
+        </h1>
+        <p class="lead">Discover what movies are trending in different regions!</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Map Section -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-globe-americas me-2"></i>Regional Map</h5>
+            </div>
+            <div class="card-body">
+                <div id="map-container" style="height: 400px; background: #f8f9fa; position: relative; border: 2px solid #dee2e6; border-radius: 8px;">
+                    <div class="d-flex flex-wrap justify-content-center align-items-center h-100 p-3">
+                        {% for region, data in regional_data.items %}
+                        <div class="region-marker m-2 text-center" 
+                             style="cursor: pointer; padding: 15px; background: {% if data.total_orders > 5 %}#28a745{% elif data.total_orders > 2 %}#ffc107{% else %}#6c757d{% endif %}; 
+                                    color: white; border-radius: 10px; min-width: 120px;"
+                             onclick="showRegionDetails('{{ region }}')">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div><strong>{{ region }}</strong></div>
+                            <small>{{ data.total_orders }} orders</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-circle text-success me-1"></i> High Activity (5+ orders)
+                        <i class="fas fa-circle text-warning ms-3 me-1"></i> Medium Activity (3-5 orders)
+                        <i class="fas fa-circle text-secondary ms-3 me-1"></i> Low Activity (1-2 orders)
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Region Details Section -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Regional Details</h5>
+            </div>
+            <div class="card-body">
+                <div id="region-details">
+                    <p class="text-muted text-center">
+                        <i class="fas fa-hand-pointer fa-2x mb-2"></i><br>
+                        Click on a region to see trending movies
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall Statistics -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-bar me-2"></i>Overall Statistics</h6>
+            </div>
+            <div class="card-body">
+                {% for region, data in regional_data.items %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ region }}:</span>
+                    <span class="badge bg-primary">{{ data.total_orders }} orders</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Regional data for JavaScript
+const regionalData = {
+    {% for region, data in regional_data.items %}
+    "{{ region }}": {
+        "movies": [
+            {% for movie in data.movies %}
+            {
+                "title": "{{ movie.title|escapejs }}",
+                "purchases": {{ movie.purchases }},
+                "id": {{ movie.id }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        "totalOrders": {{ data.total_orders }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+function showRegionDetails(region) {
+    const data = regionalData[region];
+    const detailsDiv = document.getElementById('region-details');
+    
+    let html = `
+        <h6><i class="fas fa-map-marker-alt me-2"></i>${region}</h6>
+        <p class="text-muted">Total Orders: ${data.totalOrders}</p>
+        <h6 class="mt-3">Trending Movies:</h6>
+    `;
+    
+    if (data.movies.length > 0) {
+        html += '<div class="list-group list-group-flush">';
+        data.movies.forEach((movie, index) => {
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                    <div>
+                        <strong>${index + 1}. ${movie.title}</strong>
+                        <br><small class="text-muted">${movie.purchases} purchases</small>
+                    </div>
+                    <a href="/movie/${movie.id}/" class="btn btn-sm btn-outline-primary">View</a>
+                </div>
+            `;
+        });
+        html += '</div>';
+    } else {
+        html += '<p class="text-muted"><i>No trending movies yet</i></p>';
+    }
+    
+    detailsDiv.innerHTML = html;
+}
+</script>
+{% endblock %}
