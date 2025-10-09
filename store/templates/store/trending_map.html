@@ -1,0 +1,106 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Local Popularity Map - GT Movies Store{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-map-marked-alt me-2"></i>
+            Local Popularity Map
+        </h1>
+        <p class="lead">Discover what movies are trending in different regions!</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Map Section -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-globe-americas me-2"></i>Interactive Regional Map</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="map" style="height: 500px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Region Details Panel -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Regional Details</h5>
+            </div>
+            <div class="card-body">
+                <div id="region-details">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-hand-pointer fa-3x mb-3"></i>
+                        <p>Click on a marker to see trending movies in that region</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Regional data from Django
+const regionalData = {{ regions_json|safe }};
+
+// Initialize the map
+const map = L.map('map').setView([33.7490, -84.3880], 6); // Centered on Atlanta
+
+// Add OpenStreetMap tiles
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+// Add markers for each region
+Object.entries(regionalData).forEach(([regionName, data]) => {
+    const marker = L.marker([data.coordinates.lat, data.coordinates.lng]).addTo(map);
+    marker.bindPopup(`
+        <strong>${regionName}</strong><br>
+        <p>${data.total_orders} total orders</p>
+        <button class="btn btn-sm btn-primary" onclick="showRegionDetails('${regionName}')">View Details</button>
+    `);
+});
+
+// Show region details in the side panel
+function showRegionDetails(regionName) {
+    const data = regionalData[regionName];
+    const detailsDiv = document.getElementById('region-details');
+    
+    let html = `
+        <div class="region-header mb-3">
+            <h6><i class="fas fa-map-marker-alt me-2"></i>${regionName}</h6>
+            <p class="text-muted mb-0">${data.total_orders} total orders</p>
+        </div>
+        <h6 class="mb-3">🔥 Trending Movies:</h6>
+    `;
+    
+    if (data.movies && data.movies.length > 0) {
+        html += '<div class="list-group list-group-flush">';
+        data.movies.forEach((movie, index) => {
+            html += `
+                <div class="list-group-item px-0 py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">${index + 1}. ${movie.title}</h6>
+                            <p class="mb-1 small text-muted">${movie.purchases} purchases</p>
+                            <p class="mb-0 small"><strong>$${movie.price}</strong></p>
+                        </div>
+                        <a href="/movie/${movie.id}/" class="btn btn-sm btn-outline-primary">View</a>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+    } else {
+        html += '<p class="text-muted"><i class="fas fa-exclamation-circle me-1"></i>No trending movies yet</p>';
+    }
+    
+    detailsDiv.innerHTML = html;
+}
+</script>
+{% endblock %}

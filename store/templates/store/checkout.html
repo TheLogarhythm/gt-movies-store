@@ -1,0 +1,64 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Checkout - GT Movies Store{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>Checkout
+                </h4>
+            </div>
+            <div class="card-body">
+                <h5 class="mb-4">Order Summary</h5>
+                <ul class="list-group mb-4">
+                    {% for item in cart.items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            <strong>{{ item.movie.title }}</strong>
+                            <small class="text-muted">x {{ item.quantity }}</small>
+                        </span>
+                        <span>${{ item.movie.price|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Total</strong>
+                        <strong>${{ cart.total|floatformat:2 }}</strong>
+                    </li>
+                </ul>
+
+                <h5 class="mb-4">Delivery Information</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="region" class="form-label">Your Region</label>
+                        <select class="form-control" name="region" id="region" required>
+                            <option value="Atlanta">Atlanta, GA</option>
+                            <option value="Miami">Miami, FL</option>
+                            <option value="Orlando">Orlando, FL</option>
+                            <option value="Charlotte">Charlotte, NC</option>
+                            <option value="Nashville">Nashville, TN</option>
+                            <option value="Birmingham">Birmingham, AL</option>
+                            <option value="Columbia">Columbia, SC</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="city" class="form-label">Your City</label>
+                        <input type="text" class="form-control" name="city" id="city" placeholder="Enter your city" required>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'cart' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Cart
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>Complete Order
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

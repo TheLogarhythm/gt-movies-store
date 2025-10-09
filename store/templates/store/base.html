@@ -13,9 +13,12 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
       rel="stylesheet"
     />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     {% load static %}
     <link href="{% static 'store/css/style.css' %}" rel="stylesheet" />
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
       .movie-card {
         transition: transform 0.2s;
@@ -56,6 +59,12 @@
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
               <a class="nav-link" href="{% url 'movie_list' %}">Movies</a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'trending_map' %}">
+                <i class="fas fa-map-marked-alt me-1"></i>Trending Map
+              </a>
             </li>
           </ul>
 

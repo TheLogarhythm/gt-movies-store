@@ -13,4 +13,6 @@ urlpatterns = [
     path('orders/', views.order_list, name='order_list'),
     path('review/<int:pk>/edit/', views.review_edit, name='review_edit'),
     path('review/<int:pk>/delete/', views.review_delete, name='review_delete'),
+
+    path('trending-map/', views.trending_map_view, name='trending_map'),
 ]

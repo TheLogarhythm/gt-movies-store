@@ -48,12 +48,9 @@
     </button>
   </form>
 
-  <form action="{% url 'checkout' %}" method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-success">
+  <a href="{% url 'checkout' %}" class="btn btn-success">
       <i class="fas fa-check"></i> Proceed to Checkout
-    </button>
-  </form>
+  </a>
 </div>
 {% else %}
 <div class="alert alert-info">

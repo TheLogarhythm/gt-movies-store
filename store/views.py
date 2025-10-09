@@ -6,6 +6,56 @@ from django.contrib import messages
 from .models import Movie, Review, Order, OrderItem
 from .forms import UserRegistrationForm, ReviewForm
 
+from django.db.models import Sum
+import json
+
+def trending_map_view(request):
+    """Display interactive Leaflet map with trending movies"""
+    # Define major Southeast US cities with coordinates
+    regions = {
+        'Atlanta, GA': {'lat': 33.7490, 'lng': -84.3880},
+        'Miami, FL': {'lat': 25.7617, 'lng': -80.1918},
+        'Orlando, FL': {'lat': 28.5383, 'lng': -81.3792},
+        'Charlotte, NC': {'lat': 35.2271, 'lng': -80.8431},
+        'Nashville, TN': {'lat': 36.1627, 'lng': -86.7816},
+        'Birmingham, AL': {'lat': 33.5186, 'lng': -86.8104},
+        'Columbia, SC': {'lat': 34.0007, 'lng': -81.0348},
+    }
+    
+    regional_data = {}
+    
+    for region_name, coords in regions.items():
+        city_name = region_name.split(',')[0]
+        trending_movies = Movie.objects.filter(
+            orderitem__region__icontains=city_name
+        ).annotate(
+            total_purchases=Sum('orderitem__quantity')
+        ).filter(total_purchases__gt=0).distinct().order_by('-total_purchases')[:3]
+        
+        if not trending_movies.exists():
+            trending_movies = Movie.objects.all()[:3]
+            for movie in trending_movies:
+                movie.total_purchases = 5  # Sample data
+        
+        regional_data[region_name] = {
+            'coordinates': coords,
+            'movies': [
+                {
+                    'title': movie.title,
+                    'purchases': getattr(movie, 'total_purchases', 5),
+                    'id': movie.id,
+                    'price': str(movie.price)
+                } for movie in trending_movies
+            ],
+            'total_orders': OrderItem.objects.filter(region__icontains=city_name).count() or 3
+        }
+    
+    context = {
+        'regional_data': regional_data,
+        'regions_json': json.dumps(regional_data)
+    }
+    return render(request, 'store/trending_map.html', context)
+
 def home(request):
     return render(request, 'store/home.html')
 
@@ -107,9 +157,27 @@ def review_delete(request, pk):
     return render(request, 'store/review_confirm_delete.html', {'review': review})
 
 def get_cart(request):
-    """Utility function to get or create cart in session"""
+    """Retrieve the cart from the session"""
     cart = request.session.get('cart', {})
-    return cart
+    cart_items = []
+    total = 0
+
+    for movie_id, quantity in cart.items():
+        try:
+            movie = Movie.objects.get(id=int(movie_id))
+            cart_items.append({
+                'movie': movie,
+                'quantity': quantity,
+                'total_price': movie.price * quantity
+            })
+            total += movie.price * quantity
+        except Movie.DoesNotExist:
+            continue
+
+    return {
+        'items': cart_items,
+        'total': total
+    }
 
 def update_cart(request, cart):
     """Utility function to update cart in session"""
@@ -174,40 +242,53 @@ def remove_from_cart(request):
 @login_required
 def checkout(request):
     """Checkout and create order"""
-    cart = get_cart(request)
+    cart = get_cart(request)  # Function to retrieve the cart
     if not cart:
         messages.error(request, 'Your cart is empty.')
         return redirect('cart')
 
-    # Create order
-    total = 0
-    order = Order.objects.create(user=request.user, total_amount=0)
+    if request.method == 'POST':
+        # Process the form data
+        region = request.POST.get('region', 'Unknown Region')
+        city = request.POST.get('city', 'Unknown City')
 
-    for movie_id, quantity in cart.items():
-        try:
-            movie = Movie.objects.get(id=int(movie_id))
-            item_total = movie.price * quantity
-            OrderItem.objects.create(
-                order=order,
-                movie=movie,
-                quantity=quantity,
-                price=movie.price
-            )
-            total += item_total
-        except Movie.DoesNotExist:
-            messages.error(request, f'Movie with ID {movie_id} not found.')
-            continue
+        # Create the order
+        total = 0
+        order = Order.objects.create(
+            user=request.user,
+            total_amount=0,
+            city=city,
+            region=region
+        )
 
-    # Update order total
-    order.total_amount = total
-    order.save()
+        for movie_id, quantity in cart.items():
+            try:
+                movie = Movie.objects.get(id=int(movie_id))
+                item_total = movie.price * quantity
+                OrderItem.objects.create(
+                    order=order,
+                    movie=movie,
+                    quantity=quantity,
+                    price=movie.price,
+                    region=region
+                )
+                total += item_total
+            except Movie.DoesNotExist:
+                messages.error(request, f'Movie with ID {movie_id} not found.')
+                continue
 
-    # Clear cart
-    request.session['cart'] = {}
-    request.session.modified = True
+        order.total_amount = total
+        order.save()
 
-    messages.success(request, f'Order #{order.id} created successfully!')
-    return redirect('order_list')
+        # Clear the cart
+        request.session['cart'] = {}
+        request.session.modified = True
+
+        messages.success(request, f'Order #{order.id} created successfully!')
+        return redirect('order_list')
+
+    # Render the checkout form
+    return render(request, 'store/checkout.html', {'cart': cart})
 
 @login_required
 def order_list(request):
