@@ -32,24 +32,29 @@ def trending_map_view(request):
             total_purchases=Sum('orderitem__quantity')
         ).filter(total_purchases__gt=0).distinct().order_by('-total_purchases')[:3]
         
-        if not trending_movies.exists():
-            trending_movies = Movie.objects.all()[:3]
-            for movie in trending_movies:
-                movie.total_purchases = 5  # Sample data
-        
-        regional_data[region_name] = {
-            'coordinates': coords,
-            'movies': [
-                {
-                    'title': movie.title,
-                    'purchases': getattr(movie, 'total_purchases', 5),
-                    'id': movie.id,
-                    'price': str(movie.price)
-                } for movie in trending_movies
-            ],
-            'total_orders': OrderItem.objects.filter(region__icontains=city_name).count() or 3
-        }
-    
+        # Only include regions with actual purchases
+        if trending_movies.exists():
+            regional_data[region_name] = {
+                'coordinates': coords,
+                'movies': [
+                    {
+                        'title': movie.title,
+                        'purchases': getattr(movie, 'total_purchases', 0),
+                        'id': movie.id,
+                        'price': str(movie.price)
+                    } for movie in trending_movies
+                ],
+                'total_orders': OrderItem.objects.filter(region__icontains=city_name).count(),
+                'has_data': True
+            }
+        else:
+            regional_data[region_name] = {
+                'coordinates': coords,
+                'movies': [],
+                'total_orders': 0,
+                'has_data': False
+            }
+
     context = {
         'regional_data': regional_data,
         'regions_json': json.dumps(regional_data)
@@ -170,7 +175,7 @@ def get_cart(request):
                 'quantity': quantity,
                 'total_price': movie.price * quantity
             })
-            total += movie.price * quantity
+            total += movie.price * quantity  # Add this line to calculate the total
         except Movie.DoesNotExist:
             continue
 
@@ -188,7 +193,7 @@ def update_cart(request, cart):
 def add_to_cart(request, movie_id):
     """Add movie to cart - User Story #7"""
     movie = get_object_or_404(Movie, id=movie_id)
-    cart = get_cart(request)
+    cart = request.session.get('cart', {})  # Get the raw session cart
 
     try:
         quantity = int(request.POST.get('quantity', 1))
@@ -198,37 +203,26 @@ def add_to_cart(request, movie_id):
         messages.error(request, 'Invalid quantity specified.')
         return redirect('movie_detail', pk=movie_id)
 
+    # Update the cart
     if str(movie_id) in cart:
         cart[str(movie_id)] += quantity
     else:
         cart[str(movie_id)] = quantity
 
-    update_cart(request, cart)
+    # Save the updated cart back to the session
+    request.session['cart'] = cart
+    request.session.modified = True
+
     messages.success(request, f'Added {quantity} {movie.title} to cart.')
     return redirect('movie_detail', pk=movie_id)
 
 def cart_view(request):
     """View cart contents - User Story #6"""
     cart = get_cart(request)
-    cart_items = []
-    total = 0
-
-    for movie_id, quantity in cart.items():
-        try:
-            movie = Movie.objects.get(id=int(movie_id))
-            item_total = movie.price * quantity
-            cart_items.append({
-                'movie': movie,
-                'quantity': quantity,
-                'total': item_total
-            })
-            total += item_total
-        except Movie.DoesNotExist:
-            continue
 
     return render(request, 'store/cart.html', {
-        'cart_items': cart_items,
-        'total': total
+        'cart_items': cart['items'],  # Pass the items
+        'total': cart['total']       # Pass the total
     })
 
 @login_required
@@ -243,7 +237,7 @@ def remove_from_cart(request):
 def checkout(request):
     """Checkout and create order"""
     cart = get_cart(request)  # Function to retrieve the cart
-    if not cart:
+    if not cart['items']:
         messages.error(request, 'Your cart is empty.')
         return redirect('cart')
 
@@ -261,21 +255,18 @@ def checkout(request):
             region=region
         )
 
-        for movie_id, quantity in cart.items():
-            try:
-                movie = Movie.objects.get(id=int(movie_id))
-                item_total = movie.price * quantity
-                OrderItem.objects.create(
-                    order=order,
-                    movie=movie,
-                    quantity=quantity,
-                    price=movie.price,
-                    region=region
-                )
-                total += item_total
-            except Movie.DoesNotExist:
-                messages.error(request, f'Movie with ID {movie_id} not found.')
-                continue
+        for item in cart['items']:
+            movie = item['movie']  # Use the Movie object directly
+            quantity = item['quantity']
+            item_total = movie.price * quantity
+            OrderItem.objects.create(
+                order=order,
+                movie=movie,
+                quantity=quantity,
+                price=movie.price,
+                region=region
+            )
+            total += item_total
 
         order.total_amount = total
         order.save()
