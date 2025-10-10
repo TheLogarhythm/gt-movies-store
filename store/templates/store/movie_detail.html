@@ -12,6 +12,14 @@
     <h1>{{ movie.title }}</h1>
     <p class="h4 text-primary">${{ movie.price }}</p>
     <p class="lead">{{ movie.description }}</p>
+    <p>
+      <strong>Average Rating:</strong>
+      {% if movie.get_average_rating %}
+        {{ movie.get_average_rating }} / 5
+      {% else %}
+        No ratings yet
+      {% endif %}
+    </p>
 
     {% if user.is_authenticated %}
     <form action="{% url 'add_to_cart' movie.id %}" method="post" class="mb-3">
